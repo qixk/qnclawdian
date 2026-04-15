@@ -24,7 +24,7 @@ QNClawdian brings AI agent capabilities directly into Obsidian, powered by OpenC
 
 ### ✨ Key Features
 
-- 🤖 **Multi-Agent Support** — 9 AI agents, each with their own memory space
+- 🤖 **Multi-Agent Support** — Multi AI agents, each with their own memory space
 - 🔗 **Auto `[[]]` Links** — Bidirectional links generated automatically
 - 🔍 **3-Layer Search** — Graph (PageRank) + TF-IDF + Semantic (FAISS)
 - 📊 **Obsidian Graph View** — Visualize agent memory relationships

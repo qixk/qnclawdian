@@ -1,0 +1,10 @@
+{
+  "id": "qnclawdian",
+  "name": "QNClawdian",
+  "version": "0.1.0",
+  "minAppVersion": "1.4.5",
+  "description": "Brain-inspired Obsidian plugin that connects OpenClaw AI agents to your vault. By Q & N.",
+  "author": "Q & N",
+  "authorUrl": "https://github.com/qixk/qnclawdian",
+  "isDesktopOnly": true
+}
