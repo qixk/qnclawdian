@@ -38,3 +38,15 @@
 - Obsidian 的 `vault.cachedRead()` 可以读 JSON 文件，不限于 .md
 - `vault.create()` 会在文件已存在时抛错，所以要先检查用 `modify()` 还是 `create()`
 - 文件删除用 `vault.delete(file)` 而非 `vault.adapter.remove()`，前者会正确更新 Obsidian 的文件缓存
+
+## S003: 历史对话列表和切换 (2026-04-17)
+
+### 踩坑点
+1. **`.gitignore` 中 `styles.css` 匹配所有深度** — 导致 `src/styles.css` 也被忽略。修复：改为 `/styles.css` 只匹配根目录构建产物。
+2. **下拉菜单点击外部关闭** — 必须用 `setTimeout(() => document.addEventListener(...), 0)` 延迟注册，否则当前点击事件会立即触发关闭。
+3. **`e.stopPropagation()` 在 toggle 按钮上** — 必须阻止事件冒泡，否则外部点击监听器会立刻收到同一个 click 并关闭菜单。
+
+### 设计决策
+1. **loadAll 在 ChatHistoryManager** — 加载所有对话的摘要，按 `updatedAt` 降序排列，UI 层不需要关心排序逻辑。
+2. **不需要额外保存当前对话** — S002 已确保每条消息即时持久化，切换时无需手动 save。
+3. **active 标记** — 当前对话用 CSS `::before` 箭头 + 背景色标识，简单有效。
