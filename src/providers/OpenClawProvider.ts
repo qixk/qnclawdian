@@ -86,25 +86,23 @@ export class OpenClawProvider {
 
   /**
    * Send a chat query and stream back response chunks.
+   *
+   * @param noteContext — If present, the current note's content is injected
+   *   into the system prompt (not the user message) so the AI can reference
+   *   it without polluting the chat history.
    */
   async *query(
     userText: string,
     history: ChatMessage[],
-    currentNotePath?: string,
+    noteContext?: { path: string; content: string; truncated: boolean },
   ): AsyncGenerator<StreamChunk> {
     this.abortController = new AbortController();
 
-    // Build prompt with optional note context
-    let prompt = userText;
-    if (currentNotePath) {
-      prompt += `\n\n<current_note>\n${currentNotePath}\n</current_note>`;
-    }
-
     try {
       if (this.isGateway()) {
-        yield* this.queryOpenAI(prompt, history);
+        yield* this.queryOpenAI(userText, history, noteContext);
       } else {
-        yield* this.queryOllama(prompt, history);
+        yield* this.queryOllama(userText, history, noteContext);
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === 'AbortError') {
@@ -126,18 +124,53 @@ export class OpenClawProvider {
   }
 
   // =========================================================================
+  // System Prompt with Note Context
+  // =========================================================================
+
+  /**
+   * Build the effective system prompt, optionally appending the current
+   * note's content. The note is injected here (system prompt) so it does
+   * NOT appear in the user-visible chat.
+   */
+  private buildEffectiveSystemPrompt(
+    noteContext?: { path: string; content: string; truncated: boolean },
+  ): string {
+    let prompt = this.systemPrompt;
+
+    if (noteContext) {
+      const truncationNote = noteContext.truncated
+        ? '\n\n> ⚠️ Note was truncated to 4 000 characters. The user may ask about parts you cannot see.'
+        : '';
+
+      prompt += `\n\n## Current Note Context
+
+The user currently has the following note open: **${noteContext.path}**
+
+<current_note_content>
+${noteContext.content}
+</current_note_content>${truncationNote}
+
+Use this note's content to inform your answers when relevant. If the user asks about this note, reference specific parts of it.`;
+    }
+
+    return prompt;
+  }
+
+  // =========================================================================
   // OpenAI-Compatible API (Gateway)
   // =========================================================================
 
   private async *queryOpenAI(
     prompt: string,
     history: ChatMessage[],
+    noteContext?: { path: string; content: string; truncated: boolean },
   ): AsyncGenerator<StreamChunk> {
     const messages: OpenAIMessage[] = [];
 
-    // System prompt
-    if (this.systemPrompt) {
-      messages.push({ role: 'system', content: this.systemPrompt });
+    // System prompt (with note context injected)
+    const effectiveSystemPrompt = this.buildEffectiveSystemPrompt(noteContext);
+    if (effectiveSystemPrompt) {
+      messages.push({ role: 'system', content: effectiveSystemPrompt });
     }
 
     // History
@@ -232,12 +265,14 @@ export class OpenClawProvider {
   private async *queryOllama(
     prompt: string,
     history: ChatMessage[],
+    noteContext?: { path: string; content: string; truncated: boolean },
   ): AsyncGenerator<StreamChunk> {
     const messages: OllamaMessage[] = [];
 
-    // System prompt
-    if (this.systemPrompt) {
-      messages.push({ role: 'system', content: this.systemPrompt });
+    // System prompt (with note context injected)
+    const effectiveSystemPrompt = this.buildEffectiveSystemPrompt(noteContext);
+    if (effectiveSystemPrompt) {
+      messages.push({ role: 'system', content: effectiveSystemPrompt });
     }
 
     // History

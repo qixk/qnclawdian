@@ -217,8 +217,27 @@ export class ChatView extends ItemView {
     this.messages.push(userMsg);
     this.renderMessage(userMsg);
 
-    // Get current note context
+    // Get current note context — read content, truncate at 4000 chars
     const activeFile = this.app.workspace.getActiveFile();
+    let noteContext: { path: string; content: string; truncated: boolean } | undefined;
+
+    if (activeFile && activeFile.extension === 'md') {
+      try {
+        const raw = await this.app.vault.cachedRead(activeFile);
+        const MAX_NOTE_CHARS = 4000;
+        const truncated = raw.length > MAX_NOTE_CHARS;
+        const content = truncated ? raw.slice(0, MAX_NOTE_CHARS) : raw;
+        noteContext = { path: activeFile.path, content, truncated };
+
+        if (truncated) {
+          new Notice(
+            `📝 Note "${activeFile.basename}" is ${raw.length} chars — truncated to ${MAX_NOTE_CHARS} for context.`,
+          );
+        }
+      } catch {
+        // File read failed — proceed without context
+      }
+    }
 
     // Stream response
     this.isStreaming = true;
@@ -229,7 +248,7 @@ export class ChatView extends ItemView {
       for await (const chunk of this.provider.query(
         text,
         this.messages.slice(0, -1),
-        activeFile?.path,
+        noteContext,
       )) {
         this.handleStreamChunk(chunk, assistantMsgEl);
       }
