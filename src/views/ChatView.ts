@@ -8,16 +8,18 @@
 import type { WorkspaceLeaf } from 'obsidian';
 import { ItemView, MarkdownRenderer, Notice, setIcon } from 'obsidian';
 
-import type { ChatMessage, ModelOption, StreamChunk } from '../types';
+import type { ChatMessage, Conversation, ModelOption, StreamChunk } from '../types';
 import { VIEW_TYPE_QNCLAWDIAN } from '../types';
 import type QNClawdianPlugin from '../main';
 import { OpenClawProvider } from '../providers/OpenClawProvider';
+import { ChatHistoryManager } from '../services/ChatHistoryManager';
 import { DEFAULT_MODEL_OPTIONS, getModelLabel } from '../settings/models';
 import { t } from '../i18n';
 
 export class ChatView extends ItemView {
   private plugin: QNClawdianPlugin;
   private provider: OpenClawProvider | null = null;
+  private historyManager: ChatHistoryManager;
 
   // DOM
   private viewContainerEl: HTMLElement | null = null;
@@ -28,12 +30,14 @@ export class ChatView extends ItemView {
 
   // State
   private messages: ChatMessage[] = [];
+  private currentConversation: Conversation | null = null;
   private isStreaming = false;
   private currentStreamContent = '';
 
   constructor(leaf: WorkspaceLeaf, plugin: QNClawdianPlugin) {
     super(leaf);
     this.plugin = plugin;
+    this.historyManager = new ChatHistoryManager(this.app.vault);
   }
 
   getViewType(): string {
@@ -61,6 +65,9 @@ export class ChatView extends ItemView {
     this.buildInputArea();
 
     await this.initProvider();
+
+    // S002: Restore the most recent conversation
+    await this.restoreLatestConversation();
   }
 
   async onClose() {
@@ -207,6 +214,11 @@ export class ChatView extends ItemView {
     this.inputEl.value = '';
     this.inputEl.style.height = 'auto';
 
+    // Ensure we have an active conversation
+    if (!this.currentConversation) {
+      this.currentConversation = await this.historyManager.createConversation();
+    }
+
     // Add user message
     const userMsg: ChatMessage = {
       id: `msg-${Date.now()}-user`,
@@ -216,6 +228,9 @@ export class ChatView extends ItemView {
     };
     this.messages.push(userMsg);
     this.renderMessage(userMsg);
+
+    // Persist user message
+    await this.historyManager.addMessage(this.currentConversation, userMsg);
 
     // Get current note context — read content, truncate at 4000 chars
     const activeFile = this.app.workspace.getActiveFile();
@@ -268,6 +283,11 @@ export class ChatView extends ItemView {
     };
     this.messages.push(assistantMsg);
     this.isStreaming = false;
+
+    // Persist assistant message
+    if (this.currentConversation) {
+      await this.historyManager.addMessage(this.currentConversation, assistantMsg);
+    }
 
     // Remove streaming indicator
     assistantMsgEl.removeClass('qnclawdian-streaming');
@@ -322,13 +342,41 @@ export class ChatView extends ItemView {
     }
   }
 
-  private handleNewConversation(): void {
+  private async handleNewConversation(): Promise<void> {
     this.messages = [];
+    this.currentConversation = null; // Will be created on first message
     if (this.messagesEl) {
       this.messagesEl.empty();
       this.renderWelcome();
     }
     this.provider?.cancel();
+
+    // Prune old history files (best-effort, async)
+    this.historyManager.pruneHistory().catch(() => {});
+  }
+
+  // =========================================================================
+  // History Restore (S002)
+  // =========================================================================
+
+  /**
+   * Load the most recent conversation from disk and render its messages.
+   */
+  private async restoreLatestConversation(): Promise<void> {
+    try {
+      const conv = await this.historyManager.loadLatest();
+      if (!conv || conv.messages.length === 0) return;
+
+      this.currentConversation = conv;
+      this.messages = [...conv.messages];
+
+      // Render all restored messages
+      for (const msg of this.messages) {
+        this.renderMessage(msg);
+      }
+    } catch {
+      // Silent fail — start fresh
+    }
   }
 
   // =========================================================================

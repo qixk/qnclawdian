@@ -134,6 +134,17 @@ export interface OllamaStreamChunk {
 }
 
 // =========================================================================
+// Conversation Persistence (S002)
+// =========================================================================
+
+export interface Conversation {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  messages: ChatMessage[];
+}
+
+// =========================================================================
 // Model Options
 // =========================================================================
 
