@@ -115,8 +115,6 @@ export class OpenClawProvider {
     } finally {
       this.abortController = null;
     }
-
-    yield { type: 'done' };
   }
 
   /**
@@ -158,13 +156,16 @@ export class OpenClawProvider {
       max_tokens: this.settings.maxTokens,
     };
 
+    const timeoutSignal = AbortSignal.timeout(120_000);
+    const combinedSignal = AbortSignal.any([this.abortController!.signal, timeoutSignal]);
+
     const response = await fetch(
       `${this.settings.gatewayUrl}/v1/chat/completions`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
-        signal: this.abortController!.signal,
+        signal: combinedSignal,
       },
     );
 
@@ -257,11 +258,14 @@ export class OpenClawProvider {
       },
     };
 
+    const timeoutSignal = AbortSignal.timeout(120_000);
+    const combinedSignal = AbortSignal.any([this.abortController!.signal, timeoutSignal]);
+
     const response = await fetch(`${this.settings.ollamaUrl}/api/chat`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
-      signal: this.abortController!.signal,
+      signal: combinedSignal,
     });
 
     if (!response.ok) {
@@ -294,6 +298,10 @@ export class OpenClawProvider {
 
         try {
           const chunk: OllamaStreamChunk = JSON.parse(trimmed);
+
+          if (chunk.message?.thinking) {
+            yield { type: 'thinking', content: chunk.message.thinking };
+          }
 
           if (chunk.message?.content) {
             yield { type: 'text', content: chunk.message.content };

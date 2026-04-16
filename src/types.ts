@@ -126,7 +126,7 @@ export interface OllamaMessage {
 export interface OllamaStreamChunk {
   model: string;
   created_at: string;
-  message: { role: string; content: string };
+  message: { role: string; content: string; thinking?: string };
   done: boolean;
   total_duration?: number;
   eval_count?: number;

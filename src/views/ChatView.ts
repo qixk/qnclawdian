@@ -6,13 +6,14 @@
  */
 
 import type { WorkspaceLeaf } from 'obsidian';
-import { ItemView, MarkdownRenderer, setIcon } from 'obsidian';
+import { ItemView, MarkdownRenderer, Notice, setIcon } from 'obsidian';
 
 import type { ChatMessage, ModelOption, StreamChunk } from '../types';
 import { VIEW_TYPE_QNCLAWDIAN } from '../types';
 import type QNClawdianPlugin from '../main';
 import { OpenClawProvider } from '../providers/OpenClawProvider';
 import { DEFAULT_MODEL_OPTIONS, getModelLabel } from '../settings/models';
+import { t } from '../i18n';
 
 export class ChatView extends ItemView {
   private plugin: QNClawdianPlugin;
@@ -89,6 +90,11 @@ export class ChatView extends ItemView {
     // Actions
     const actions = header.createDiv({ cls: 'qnclawdian-header-actions' });
 
+    const copyAllBtn = actions.createDiv({ cls: 'qnclawdian-header-btn' });
+    setIcon(copyAllBtn, 'clipboard-copy');
+    copyAllBtn.setAttribute('aria-label', t('copyAll'));
+    copyAllBtn.addEventListener('click', () => this.handleCopyAll());
+
     const newBtn = actions.createDiv({ cls: 'qnclawdian-header-btn' });
     setIcon(newBtn, 'square-pen');
     newBtn.setAttribute('aria-label', 'New conversation');
@@ -119,8 +125,19 @@ export class ChatView extends ItemView {
     const inputWrapper = inputArea.createDiv({ cls: 'qnclawdian-input-wrapper' });
     this.inputEl = inputWrapper.createEl('textarea', {
       cls: 'qnclawdian-input',
-      attr: { placeholder: 'Ask anything... (Enter to send, Shift+Enter for newline)' },
+      attr: {
+        placeholder: t('inputPlaceholder'),
+        rows: '2',
+        spellcheck: 'false',
+      },
     });
+
+    // 确保输入框可聚焦和输入
+    this.inputEl.contentEditable = 'false'; // textarea 不需要 contentEditable
+    this.inputEl.tabIndex = 0;
+    this.inputEl.style.pointerEvents = 'auto';
+    this.inputEl.style.userSelect = 'text';
+    this.inputEl.style.webkitUserSelect = 'text';
 
     // Auto-resize
     this.inputEl.addEventListener('input', () => {
@@ -130,8 +147,13 @@ export class ChatView extends ItemView {
     });
 
     // Submit on Enter (Shift+Enter for newline)
+    // 使用 compositionend 处理中文输入法
+    let isComposing = false;
+    this.inputEl.addEventListener('compositionstart', () => { isComposing = true; });
+    this.inputEl.addEventListener('compositionend', () => { isComposing = false; });
+
     this.inputEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
+      if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
         e.preventDefault();
         this.handleSubmit();
       }
@@ -165,7 +187,18 @@ export class ChatView extends ItemView {
   // =========================================================================
 
   private async handleSubmit(): Promise<void> {
-    if (!this.inputEl || !this.provider || this.isStreaming) return;
+    if (!this.inputEl) {
+      new Notice('Input not ready');
+      return;
+    }
+    if (!this.provider) {
+      new Notice('Not connected. Check settings.');
+      return;
+    }
+    if (this.isStreaming) {
+      new Notice('Waiting for response...');
+      return;
+    }
 
     const text = this.inputEl.value.trim();
     if (!text) return;
@@ -220,6 +253,9 @@ export class ChatView extends ItemView {
     // Remove streaming indicator
     assistantMsgEl.removeClass('qnclawdian-streaming');
 
+    // Add copy button
+    this.addCopyButton(assistantMsgEl, this.currentStreamContent);
+
     this.scrollToBottom();
   }
 
@@ -227,6 +263,11 @@ export class ChatView extends ItemView {
     switch (chunk.type) {
       case 'text':
         this.currentStreamContent += chunk.content;
+        this.updateStreamingMessage(msgEl, this.currentStreamContent);
+        break;
+      case 'thinking':
+        // Show thinking content in a collapsible block
+        this.currentStreamContent += `\n\n> [!note]- 💭 ${t('thinking')}\n> ${chunk.content.replace(/\n/g, '\n> ')}`;
         this.updateStreamingMessage(msgEl, this.currentStreamContent);
         break;
       case 'error':
@@ -238,6 +279,27 @@ export class ChatView extends ItemView {
         break;
       case 'done':
         break;
+    }
+  }
+
+  private async handleCopyAll(): Promise<void> {
+    if (this.messages.length === 0) {
+      new Notice('No messages to copy');
+      return;
+    }
+
+    const text = this.messages
+      .map((msg) => {
+        const role = msg.role === 'user' ? '👤 You' : '🧠 QNClawdian';
+        return `${role}:\n${msg.content}`;
+      })
+      .join('\n\n---\n\n');
+
+    try {
+      await navigator.clipboard.writeText(text);
+      new Notice(t('copiedAll'));
+    } catch {
+      new Notice('Failed to copy');
     }
   }
 
@@ -257,10 +319,15 @@ export class ChatView extends ItemView {
   private renderWelcome(): void {
     if (!this.messagesEl) return;
     const welcome = this.messagesEl.createDiv({ cls: 'qnclawdian-welcome' });
-    welcome.createEl('h3', { text: '🧠 QNClawdian' });
-    welcome.createEl('p', {
-      text: 'Brain-inspired AI assistant in your Obsidian vault. Powered by OpenClaw.',
-    });
+    welcome.createEl('h3', { text: t('welcomeTitle') });
+    welcome.createEl('p', { text: t('welcomeDesc') });
+
+    const features = welcome.createDiv({ cls: 'qnclawdian-welcome-features' });
+    features.createEl('p', { text: t('welcomeFeature1') });
+    features.createEl('p', { text: t('welcomeFeature2') });
+    features.createEl('p', { text: t('welcomeFeature3') });
+    features.createEl('p', { text: t('welcomeFeature4') });
+
     welcome.createEl('p', {
       text: `Model: ${getModelLabel(this.plugin.settings.model)}`,
       cls: 'qnclawdian-welcome-model',
@@ -286,7 +353,15 @@ export class ChatView extends ItemView {
     roleLabel.textContent = msg.role === 'user' ? '👤 You' : '🧠 QNClawdian';
 
     const contentEl = msgEl.createDiv({ cls: 'qnclawdian-message-content' });
-    contentEl.textContent = msg.content;
+
+    if (msg.role === 'assistant') {
+      MarkdownRenderer.render(this.app, msg.content, contentEl, '', this);
+    } else {
+      contentEl.textContent = msg.content;
+    }
+
+    // Both user and assistant messages get copy button
+    this.addCopyButton(msgEl, msg.content);
 
     this.scrollToBottom();
   }
@@ -312,9 +387,10 @@ export class ChatView extends ItemView {
   }
 
   private updateStreamingMessage(msgEl: HTMLElement, content: string): void {
-    const contentEl = msgEl.querySelector('.qnclawdian-message-content');
+    const contentEl = msgEl.querySelector('.qnclawdian-message-content') as HTMLElement | null;
     if (contentEl) {
-      contentEl.textContent = content;
+      contentEl.empty();
+      MarkdownRenderer.render(this.app, content, contentEl, '', this);
     }
     this.scrollToBottom();
   }
@@ -325,6 +401,28 @@ export class ChatView extends ItemView {
       cls: 'qnclawdian-message qnclawdian-message-system',
     });
     msgEl.textContent = text;
+  }
+
+  private addCopyButton(msgEl: HTMLElement, content: string): void {
+    const actionsEl = msgEl.createDiv({ cls: 'qnclawdian-message-actions' });
+    const copyBtn = actionsEl.createDiv({ cls: 'qnclawdian-copy-btn' });
+    setIcon(copyBtn, 'copy');
+    copyBtn.createSpan({ text: t('copyMessage') });
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(content);
+        copyBtn.empty();
+        setIcon(copyBtn, 'check');
+        copyBtn.createSpan({ text: t('copied') });
+        setTimeout(() => {
+          copyBtn.empty();
+          setIcon(copyBtn, 'copy');
+          copyBtn.createSpan({ text: t('copyMessage') });
+        }, 2000);
+      } catch {
+        new Notice('Failed to copy');
+      }
+    });
   }
 
   private updateStatus(model?: string): void {

@@ -10,9 +10,16 @@ import type { ModelOption } from '../types';
 export const DEFAULT_MODEL_OPTIONS: ModelOption[] = [
   // Local models (Ollama)
   {
-    value: 'gemma4:27b',
-    label: 'Gemma 4 27B',
-    description: 'Google Gemma 4, strong all-around',
+    value: 'gemma4:26b',
+    label: 'Gemma 4 26B',
+    description: 'Google Gemma 4, strong all-around (18GB)',
+    group: 'local',
+    contextWindow: 128000,
+  },
+  {
+    value: 'gemma4:31b',
+    label: 'Gemma 4 31B',
+    description: 'Google Gemma 4, largest local (20GB)',
     group: 'local',
     contextWindow: 128000,
   },

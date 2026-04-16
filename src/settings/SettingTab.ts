@@ -118,19 +118,29 @@ export class SettingTab extends PluginSettingTab {
       .setName('Default model')
       .setDesc('Model to use for chat')
       .addDropdown((dropdown) => {
-        // Local models
-        dropdown.addOption('', '── Local Models ──');
+        // Access the native <select> element to use optgroup
+        const selectEl = dropdown.selectEl;
+
+        // Local models optgroup
+        const localGroup = selectEl.createEl('optgroup', { attr: { label: '── Local Models ──' } });
         for (const opt of DEFAULT_MODEL_OPTIONS.filter(
           (o) => o.group === 'local',
         )) {
-          dropdown.addOption(opt.value, `${opt.label} — ${opt.description}`);
+          localGroup.createEl('option', {
+            value: opt.value,
+            text: `${opt.label} — ${opt.description}`,
+          });
         }
-        // Cloud models
-        dropdown.addOption('', '── Cloud Models ──');
+
+        // Cloud models optgroup
+        const cloudGroup = selectEl.createEl('optgroup', { attr: { label: '── Cloud Models ──' } });
         for (const opt of DEFAULT_MODEL_OPTIONS.filter(
           (o) => o.group === 'cloud',
         )) {
-          dropdown.addOption(opt.value, `${opt.label} — ${opt.description}`);
+          cloudGroup.createEl('option', {
+            value: opt.value,
+            text: `${opt.label} — ${opt.description}`,
+          });
         }
 
         dropdown.setValue(this.plugin.settings.model);

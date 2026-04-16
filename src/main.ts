@@ -20,7 +20,7 @@ const DEFAULT_SETTINGS: QNClawdianSettings = {
   useGateway: true,
 
   // Model
-  model: 'gemma4:27b',
+  model: 'gemma4:26b',
   temperature: 0.7,
   maxTokens: 4096,
 

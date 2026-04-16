@@ -1,0 +1,304 @@
+{
+  "project": "QNClawdian",
+  "version": "0.2.0 → 1.0.0",
+  "method": "Roo Framework (Batch Loop)",
+  "created": "2026-04-16T09:35:00+08:00",
+  "stories": [
+    {
+      "id": "M2-S01",
+      "milestone": "M2",
+      "title": "启用 MarkdownRenderer",
+      "description": "将 AI 回复从纯文本切换为 Obsidian MarkdownRenderer 渲染",
+      "acceptance": [
+        "AI回复中 **加粗** 渲染为粗体",
+        "``代码`` 渲染为行内代码",
+        "代码块有语法高亮",
+        "用户消息保持 textContent（防XSS）",
+        "tsc --noEmit 零错误",
+        "npm run build 成功"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美", "小马哥"],
+      "depends": [],
+      "priority": 1,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M2-S02",
+      "milestone": "M2",
+      "title": "显示 thinking 折叠块",
+      "description": "gemma4:26b 返回的 thinking 字段以 Obsidian callout 折叠块显示",
+      "acceptance": [
+        "gemma4:26b thinking 内容显示在折叠块中",
+        "折叠块可展开/收起",
+        "无 thinking 字段的模型正常显示",
+        "tsc --noEmit 零错误"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": ["M2-S01"],
+      "priority": 2,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M2-S03",
+      "milestone": "M2",
+      "title": "欢迎界面 i18n",
+      "description": "将硬编码英文欢迎词替换为 i18n t() 函数调用",
+      "acceptance": [
+        "中文环境显示中文欢迎词",
+        "日文环境显示日文",
+        "英文环境显示英文",
+        "所有文字使用 t() 函数"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": [],
+      "priority": 3,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M2-S04",
+      "milestone": "M2",
+      "title": "复制按钮功能",
+      "description": "每条 AI 回复添加复制按钮",
+      "acceptance": [
+        "每条 AI 回复右下角有复制按钮",
+        "点击复制纯文本到剪贴板",
+        "复制后显示 ✅ 已复制 2秒后恢复",
+        "按钮使用 i18n 文案"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": ["M2-S01"],
+      "priority": 4,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M2-S05",
+      "milestone": "M2",
+      "title": "M2 集成测试",
+      "description": "M2 全功能集成测试",
+      "acceptance": [
+        "Markdown 渲染 + thinking + i18n + 复制 联合工作",
+        "暗色/亮色主题切换正常",
+        "无 console error",
+        "安全扫描通过"
+      ],
+      "assignee": "小美",
+      "reviewer": ["小马哥", "小法"],
+      "depends": ["M2-S01", "M2-S02", "M2-S03", "M2-S04"],
+      "priority": 5,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M3-S01",
+      "milestone": "M3",
+      "title": "当前笔记注入",
+      "description": "聊天时自动将当前打开的 md 文件内容注入 system prompt",
+      "acceptance": [
+        "聊天时当前打开文件内容自动注入",
+        "注入前缀 [当前笔记: filename.md]",
+        "无打开文件时不注入",
+        "注入内容不超过 4000 字符（截断提示）"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美", "小马哥"],
+      "depends": ["M2-S05"],
+      "priority": 6,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M3-S02",
+      "milestone": "M3",
+      "title": "Vault 全文搜索",
+      "description": "输入 /search 关键词 触发 vault 内文件搜索",
+      "acceptance": [
+        "/search 关键词 触发搜索",
+        "返回匹配文件列表（最多10个）",
+        "显示文件名 + 匹配行预览",
+        "无匹配时显示友好提示"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小马哥"],
+      "depends": [],
+      "priority": 7,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M3-S03",
+      "milestone": "M3",
+      "title": "自动 [[wikilink]]",
+      "description": "AI 回复中自动为已有笔记名添加 [[]] 链接",
+      "acceptance": [
+        "AI 提到 vault 内笔记名时自动加 [[]]",
+        "不破坏代码块内容",
+        "设置中可关闭此功能",
+        "性能：处理时间 < 100ms"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": ["M3-S02"],
+      "priority": 8,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M3-S04",
+      "milestone": "M3",
+      "title": "M3 集成测试",
+      "description": "M3 上下文感知全功能测试",
+      "acceptance": [
+        "打开不同笔记聊天，AI 知道当前内容",
+        "搜索返回正确结果",
+        "wikilink 点击可跳转",
+        "性能测试通过"
+      ],
+      "assignee": "小美",
+      "reviewer": ["小马哥", "飞龙"],
+      "depends": ["M3-S01", "M3-S02", "M3-S03"],
+      "priority": 9,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M4-S01",
+      "milestone": "M4",
+      "title": "对话历史保存",
+      "description": "对话保存到 vault 的 _chats/ 目录",
+      "acceptance": [
+        "对话保存到 _chats/ 目录",
+        "格式为 md 文件（YYYY-MM-DD-title.md）",
+        "重启 Obsidian 后可恢复",
+        "保存触发：每条消息自动保存"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美", "小马哥"],
+      "depends": ["M3-S04"],
+      "priority": 10,
+      "status": "pending",
+      "estimated_rounds": 2
+    },
+    {
+      "id": "M4-S02",
+      "milestone": "M4",
+      "title": "对话列表",
+      "description": "侧边栏顶部显示历史对话列表",
+      "acceptance": [
+        "侧边栏显示历史对话列表",
+        "点击可切换到历史对话",
+        "显示对话标题 + 日期",
+        "当前对话高亮"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": ["M4-S01"],
+      "priority": 11,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M4-S03",
+      "milestone": "M4",
+      "title": "对话导出",
+      "description": "右键对话导出为标准 Markdown",
+      "acceptance": [
+        "右键对话 → 导出为 Markdown",
+        "导出包含完整对话（时间戳+角色标记）",
+        "导出文件可在 Obsidian 中打开"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": ["M4-S01"],
+      "priority": 12,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M4-S04",
+      "milestone": "M4",
+      "title": "M4 集成测试",
+      "description": "对话管理全功能测试",
+      "acceptance": [
+        "创建3个对话，切换正常",
+        "重启 Obsidian 后历史在",
+        "导出文件格式正确"
+      ],
+      "assignee": "小美",
+      "reviewer": ["小马哥"],
+      "depends": ["M4-S01", "M4-S02", "M4-S03"],
+      "priority": 13,
+      "status": "pending",
+      "estimated_rounds": 1
+    },
+    {
+      "id": "M5-S01",
+      "milestone": "M5",
+      "title": "MemPalace 搜索接入",
+      "description": "聊天中 /memory 命令搜索 MemPalace 记忆库",
+      "acceptance": [
+        "/memory 关键词 触发搜索",
+        "返回相关记忆条目",
+        "无 MemPalace 时优雅降级提示",
+        "搜索时间 < 2s"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小马哥", "飞龙"],
+      "depends": ["M4-S04"],
+      "priority": 14,
+      "status": "pending",
+      "estimated_rounds": 2
+    },
+    {
+      "id": "M5-S02",
+      "milestone": "M5",
+      "title": "图谱可视化预览",
+      "description": "侧边栏显示当前笔记关联图谱",
+      "acceptance": [
+        "底部显示当前笔记的关联图谱",
+        "节点可点击跳转",
+        "使用 Obsidian Graph API",
+        "图谱大小自适应面板宽度"
+      ],
+      "assignee": "大拿马",
+      "reviewer": ["小美"],
+      "depends": ["M5-S01"],
+      "priority": 15,
+      "status": "pending",
+      "estimated_rounds": 2
+    },
+    {
+      "id": "M5-S03",
+      "milestone": "M5",
+      "title": "M5 最终集成测试",
+      "description": "QNClawdian v1.0 全功能端到端测试",
+      "acceptance": [
+        "M2+M3+M4+M5 全功能工作",
+        "性能测试：搜索<2s，渲染<500ms",
+        "内存占用 < 100MB",
+        "安全扫描通过",
+        "达尔文评分 ≥ 8.0/10"
+      ],
+      "assignee": "全员",
+      "reviewer": ["龙龙"],
+      "depends": ["M5-S01", "M5-S02"],
+      "priority": 16,
+      "status": "pending",
+      "estimated_rounds": 2
+    }
+  ],
+  "stats": {
+    "total": 16,
+    "pending": 16,
+    "in_progress": 0,
+    "done": 0,
+    "failed": 0
+  }
+}
