@@ -27,6 +27,7 @@ export class ChatView extends ItemView {
   private inputEl: HTMLTextAreaElement | null = null;
   private statusEl: HTMLElement | null = null;
   private modelLabelEl: HTMLElement | null = null;
+  private historyDropdownEl: HTMLElement | null = null;
 
   // State
   private messages: ChatMessage[] = [];
@@ -96,6 +97,16 @@ export class ChatView extends ItemView {
 
     // Actions
     const actions = header.createDiv({ cls: 'qnclawdian-header-actions' });
+
+    // S003: History button
+    const historyBtnWrapper = actions.createDiv({ cls: 'qnclawdian-history-wrapper' });
+    const historyBtn = historyBtnWrapper.createDiv({ cls: 'qnclawdian-header-btn' });
+    setIcon(historyBtn, 'clock');
+    historyBtn.setAttribute('aria-label', 'Chat history');
+    historyBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.toggleHistoryDropdown(historyBtnWrapper);
+    });
 
     const copyAllBtn = actions.createDiv({ cls: 'qnclawdian-header-btn' });
     setIcon(copyAllBtn, 'clipboard-copy');
@@ -356,7 +367,7 @@ export class ChatView extends ItemView {
   }
 
   // =========================================================================
-  // History Restore (S002)
+  // History Restore (S002) & History List (S003)
   // =========================================================================
 
   /**
@@ -377,6 +388,101 @@ export class ChatView extends ItemView {
     } catch {
       // Silent fail — start fresh
     }
+  }
+
+  /**
+   * Toggle the history dropdown panel. (S003)
+   */
+  private async toggleHistoryDropdown(wrapper: HTMLElement): Promise<void> {
+    // If already open, close it
+    if (this.historyDropdownEl) {
+      this.closeHistoryDropdown();
+      return;
+    }
+
+    const conversations = await this.historyManager.loadAll();
+
+    this.historyDropdownEl = wrapper.createDiv({ cls: 'qnclawdian-history-dropdown' });
+
+    if (conversations.length === 0) {
+      this.historyDropdownEl.createDiv({
+        cls: 'qnclawdian-history-empty',
+        text: 'No conversations yet',
+      });
+    } else {
+      for (const conv of conversations) {
+        const item = this.historyDropdownEl.createDiv({ cls: 'qnclawdian-history-item' });
+
+        // Highlight the current conversation
+        if (this.currentConversation?.id === conv.id) {
+          item.addClass('qnclawdian-history-item-active');
+        }
+
+        // Time display
+        const time = new Date(conv.updatedAt);
+        const timeStr = `${time.getMonth() + 1}/${time.getDate()} ${time.getHours().toString().padStart(2, '0')}:${time.getMinutes().toString().padStart(2, '0')}`;
+        item.createSpan({ cls: 'qnclawdian-history-time', text: timeStr });
+
+        // Preview: first user message, truncated to 30 chars
+        const firstUserMsg = conv.messages.find((m) => m.role === 'user');
+        const preview = firstUserMsg
+          ? firstUserMsg.content.slice(0, 30) + (firstUserMsg.content.length > 30 ? '…' : '')
+          : '(empty)';
+        item.createSpan({ cls: 'qnclawdian-history-preview', text: preview });
+
+        item.addEventListener('click', () => {
+          this.switchToConversation(conv);
+          this.closeHistoryDropdown();
+        });
+      }
+    }
+
+    // Close dropdown when clicking outside
+    const closeHandler = (e: MouseEvent) => {
+      if (!wrapper.contains(e.target as Node)) {
+        this.closeHistoryDropdown();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    // Delay to avoid the current click triggering it immediately
+    setTimeout(() => document.addEventListener('click', closeHandler), 0);
+  }
+
+  /**
+   * Close the history dropdown. (S003)
+   */
+  private closeHistoryDropdown(): void {
+    if (this.historyDropdownEl) {
+      this.historyDropdownEl.remove();
+      this.historyDropdownEl = null;
+    }
+  }
+
+  /**
+   * Switch to a different conversation. Saves current first. (S003)
+   */
+  private async switchToConversation(conv: Conversation): Promise<void> {
+    // Current conversation is already auto-saved on each message,
+    // so no extra save needed here.
+
+    // Load the target conversation
+    this.currentConversation = conv;
+    this.messages = [...conv.messages];
+
+    // Re-render
+    if (this.messagesEl) {
+      this.messagesEl.empty();
+      if (this.messages.length === 0) {
+        this.renderWelcome();
+      } else {
+        for (const msg of this.messages) {
+          this.renderMessage(msg);
+        }
+      }
+    }
+
+    this.provider?.cancel();
+    this.isStreaming = false;
   }
 
   // =========================================================================

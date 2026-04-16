@@ -72,6 +72,32 @@ export class ChatHistoryManager {
   }
 
   /**
+   * Load all conversations, sorted by updatedAt descending (newest first).
+   * Used by the history list UI (S003).
+   */
+  async loadAll(): Promise<Conversation[]> {
+    const files = await this.listHistoryFiles();
+    if (files.length === 0) return [];
+
+    const conversations: Conversation[] = [];
+    for (const fileName of files) {
+      const conv = await this.loadFile(fileName);
+      if (conv) conversations.push(conv);
+    }
+
+    // Sort newest first
+    conversations.sort((a, b) => b.updatedAt - a.updatedAt);
+    return conversations;
+  }
+
+  /**
+   * Load a conversation by its ID.
+   */
+  async loadById(id: string): Promise<Conversation | null> {
+    return this.loadFile(`${id}.json`);
+  }
+
+  /**
    * Enforce the MAX_HISTORY_FILES limit — delete oldest files.
    */
   async pruneHistory(): Promise<number> {
