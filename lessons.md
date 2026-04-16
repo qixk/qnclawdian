@@ -20,3 +20,21 @@
 - `vault.cachedRead()` 比 `vault.read()` 快，用缓存版本即可
 - `queryOpenAI` 和 `queryOllama` 都需要传 `noteContext`，不能只改一个
 - `tsc --noEmit` 零错误 + `npm run build` 成功 = 可信
+
+## S002: 对话历史本地持久化 (2026-04-17)
+
+### 设计决策
+1. **独立 service 层** — `ChatHistoryManager` 不依赖 UI，只依赖 `Vault` API。方便测试和复用。
+2. **文件名即排序** — `conv-{timestamp}.json` 利用字符串排序即可得到时间顺序，无需解析 JSON 再比较 `updatedAt`。
+3. **lazy 创建 conversation** — 新对话不在点"新建"时创建文件，而是在发第一条消息时才 `createConversation()`，避免空文件。
+4. **prune 时机** — 放在 `handleNewConversation()` 而非每次 save，减少 IO。
+
+### 踩坑点
+1. **Obsidian Vault API 没有 `mkdir -p`** — 必须手动检查并逐级创建 `.qnclawdian` 和 `.qnclawdian/history`。用 `getAbstractFileByPath()` 判断存在性。
+2. **`vault.modify()` 需要 TFile 而非 TAbstractFile** — 用 `as any` 绕过类型，因为 `getAbstractFileByPath` 返回 `TAbstractFile | null`。
+3. **`handleNewConversation` 从 sync 变 async** — 因为加了 `pruneHistory()` 调用，要改签名为 `async`。
+
+### 要点
+- Obsidian 的 `vault.cachedRead()` 可以读 JSON 文件，不限于 .md
+- `vault.create()` 会在文件已存在时抛错，所以要先检查用 `modify()` 还是 `create()`
+- 文件删除用 `vault.delete(file)` 而非 `vault.adapter.remove()`，前者会正确更新 Obsidian 的文件缓存
