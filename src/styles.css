@@ -238,14 +238,22 @@
 .qnclawdian-message-content {
   white-space: pre-wrap;
   color: var(--text-normal);
+  user-select: text;
+  -webkit-user-select: text;
+  cursor: text;
 }
 
-/* Message actions (copy button) */
+.qnclawdian-message-content * {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Message actions (copy button) — always visible for better UX */
 .qnclawdian-message-actions {
   display: flex;
   gap: 4px;
   margin-top: 6px;
-  opacity: 0;
+  opacity: 0.5;
   transition: opacity 0.15s ease;
 }
 
@@ -257,17 +265,20 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 4px;
   cursor: pointer;
   font-size: 11px;
   color: var(--text-muted);
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
   transition: all 0.15s ease;
 }
 
 .qnclawdian-copy-btn:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
+  border-color: var(--interactive-accent);
 }
 
 /* Streaming indicator */

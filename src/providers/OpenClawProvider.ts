@@ -189,7 +189,7 @@ Use this note's content to inform your answers when relevant. If the user asks a
       max_tokens: this.settings.maxTokens,
     };
 
-    const timeoutSignal = AbortSignal.timeout(120_000);
+    const timeoutSignal = AbortSignal.timeout(300_000);
     const combinedSignal = AbortSignal.any([this.abortController!.signal, timeoutSignal]);
 
     const response = await fetch(
@@ -293,7 +293,7 @@ Use this note's content to inform your answers when relevant. If the user asks a
       },
     };
 
-    const timeoutSignal = AbortSignal.timeout(120_000);
+    const timeoutSignal = AbortSignal.timeout(300_000);
     const combinedSignal = AbortSignal.any([this.abortController!.signal, timeoutSignal]);
 
     const response = await fetch(`${this.settings.ollamaUrl}/api/chat`, {
