@@ -238,14 +238,48 @@
 .qnclawdian-message-content {
   white-space: pre-wrap;
   color: var(--text-normal);
-  user-select: text;
-  -webkit-user-select: text;
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
   cursor: text;
 }
 
-.qnclawdian-message-content * {
-  user-select: text;
-  -webkit-user-select: text;
+.qnclawdian-message-content *,
+.qnclawdian-message-content p,
+.qnclawdian-message-content span,
+.qnclawdian-message-content code,
+.qnclawdian-message-content pre,
+.qnclawdian-message-content li,
+.qnclawdian-message-content a,
+.qnclawdian-message-content strong,
+.qnclawdian-message-content em,
+.qnclawdian-message-content h1,
+.qnclawdian-message-content h2,
+.qnclawdian-message-content h3,
+.qnclawdian-message-content blockquote {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+}
+
+/* 选中文本高亮样式 */
+.qnclawdian-message-content ::selection {
+  background: var(--text-selection);
+  color: var(--text-normal);
+}
+
+.qnclawdian-message-content ::-moz-selection {
+  background: var(--text-selection);
+  color: var(--text-normal);
+}
+
+/* 用户消息也支持选择复制 */
+.qnclawdian-message-user .qnclawdian-message-content {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  cursor: text;
 }
 
 /* Message actions (copy button) — always visible for better UX */

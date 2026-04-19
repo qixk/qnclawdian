@@ -14,7 +14,7 @@
         "笔记内容超过 4000 字符时自动截断并提示"
       ],
       "priority": 1,
-      "status": "done",
+      "status": "pending",
       "dependencies": []
     },
     {
@@ -28,10 +28,8 @@
         "历史文件超过 50 个时，自动删除最旧的"
       ],
       "priority": 2,
-      "status": "done",
-      "dependencies": [
-        "S001"
-      ]
+      "status": "pending",
+      "dependencies": ["S001"]
     },
     {
       "id": "S003",
@@ -45,10 +43,8 @@
         "当前对话自动保存后再切换"
       ],
       "priority": 3,
-      "status": "done",
-      "dependencies": [
-        "S002"
-      ]
+      "status": "pending",
+      "dependencies": ["S002"]
     }
   ]
 }
